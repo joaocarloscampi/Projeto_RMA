@@ -57,14 +57,13 @@ def Position_Robot(data):
     arrived = robot.arrive()
     if robot.arrive():
         sub_robot.unregister()
+        rospy.signal_shutdown("Teste")
 
 
 def Position_Ball(data):
     x_pos = data.pose.position.x*100 + 85
     y_pos = data.pose.position.y*100 + 65
     ball.sim_get_pose(data)
-    if robot.arrive():
-        sub_ball.unregister()
 
 def Publisher_Twist(v, w):
     msg = Twist()
@@ -74,9 +73,14 @@ def Publisher_Twist(v, w):
 
 
 def Run(tp_x,tp_y, tp_theta):
-    rospy.init_node('testeTraveSim', anonymous=True) #make node
+    rospy.init_node('testeTraveSim', anonymous=True, disable_signals = True) #make node
     global sub_ball
     global sub_robot
+
+    start_time = time.time()
+
+    Tp('yellow_team/robot_0', tp_x, tp_y, 0.02, 0)
+    Tp('vss_ball', 0, 0, 0.05, 0)
 
     sub_robot = rospy.Subscriber('/vision/yellow_team/robot_0',ModelState,Position_Robot)
     sub_ball = rospy.Subscriber('/vision/ball',ModelState,Position_Ball)
@@ -86,7 +90,5 @@ def Run(tp_x,tp_y, tp_theta):
     dy = abs(robot.yPos - robot.target.yPos)
     dtheta = robot.theta
     dt = finish_time - start_time
-    Tp('yellow_team/robot_0', tp_x, tp_y, 0.02, 0)
-    Tp('vss_ball', 0, 0, 0.05, 0)
 
     return dy, dtheta, dt
