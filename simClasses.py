@@ -284,7 +284,8 @@ class Robot:
     Output: True or False.
     """
     def arrive(self):
-        if self.dist(self.target) <= 3:
+        print(self.dist(self.target))
+        if self.dist(self.target) <= 6:
             return True
         else:
             return False
