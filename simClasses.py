@@ -1,4 +1,4 @@
-from numpy import sqrt, array, amin, where, zeros, delete, append, int32, argmin
+from numpy import sqrt, array, amin, where, zeros, delete, append, int32, argmin, random, argwhere, maximum
 
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
@@ -284,8 +284,7 @@ class Robot:
     Output: True or False.
     """
     def arrive(self):
-        print(self.dist(self.target))
-        if self.dist(self.target) <= 6:
+        if self.dist(self.target) <= 5:
             return True
         else:
             return False
@@ -359,6 +358,64 @@ class Robot:
         print('xPos: {:.2f} | yPos: {:.2f} | theta: {:.2f} | velocity: {:.2f}'.format(self.xPos, self.yPos,
                                                                                       float(self.theta), float(self.v)))
 
+
+class GA:
+    def __init__(self,nvar,varmin,varmax,maxit,npop, K_t = 10, K_p = 5, K_d = 2):
+        self.nvar = nvar
+        self.varmin = varmin
+        self.varmax = varmax
+        self.maxit = maxit
+        self.npop = npop
+        self.K_t = K_t
+        self.K_p = K_p
+        self.K_d = K_d
+        self.pop = []
+        self.vec_cost = []
+        self.vec_dy = []
+        self.vec_dang = []
+        self.vec_dt = []
+
+    def update_cost_param(self,dy,dang,dt):
+        
+        self.vec_dy.append(dy)
+        self.vec_dang.append(dang)
+        self.vec_dt.append(dt)
+
+    def initialize_pop(self):
+
+        self.pop = zeros([self.npop,self.nvar])
+        for i in range(self.npop):
+            self.pop[i] = random.uniform(self.varmin, self.varmax, self.nvar)       
+    
+    def cost_func(self):
+        
+            cost = (self.K_t*dt + self.K_p*dang**2 + self.K_d*dy**2)
+            self.vec_cost.append(sum(cost)) 
+
+    def crossover(self,p1, p2, gamma=0.1):
+        c1 = p1.deepcopy()
+        c2 = p1.deepcopy()
+        alpha = random.uniform(-gamma, 1+gamma, *c1.position.shape)
+        c1.position = alpha*p1.position + (1-alpha)*p2.position
+        c2.position = alpha*p2.position + (1-alpha)*p1.position
+        return c1, c2
+
+    def mutate(self,x, mu, sigma):
+        y = x.deepcopy()
+        flag = random.rand(*x.position.shape) <= mu
+        ind = argwhere(flag)
+        y.position[ind] += sigma*random.randn(*ind.shape)
+        return y
+
+    def apply_bound(self,x, varmin, varmax):
+        x.position = maximum(x.position, varmin)
+        x.position = minimum(x.position, varmax)
+
+    def roulette_wheel_selection(self,p):
+        c = cumsum(p)
+        r = sum(p)*random.rand()
+        ind = argwhere(r <= c)
+        return ind[0][0]    
 
 '''
 -------------------Descomentar quando atividade do Grid voltar

@@ -7,12 +7,12 @@ class Univector:
         "Evolutionary Univector Field-based Navigation with Collision Avoidance for Mobile Robot"
     '''
 
-    def __init__(self):
-        self.d_e = 6        # Predefined radius that decides the size of the spiral.
-        self.k_r = 3        # Smoothing constant for vector field
-        self.delta = 3.5    # Variance gaussian parameter
-        self.k_o = 0.5      # Proportional constant of obstacle velocity
-        self.d_min = 3.5    # Minimum distance what the field becomes pure
+    def __init__(self, params):
+        self.d_e = params[0]        # Predefined radius that decides the size of the spiral.
+        self.k_r = params[1]        # Smoothing constant for vector field
+        self.delta = params[2]    # Variance gaussian parameter
+        self.k_o = params[3]      # Proportional constant of obstacle velocity
+        self.d_min = params[4]    # Minimum distance what the field becomes pure
 
 
     '''
