@@ -400,7 +400,7 @@ class GA:
         for i in range(len(dang)):
             cost += self.K_t*dt[i] + self.K_p*dang[i]*dang[i] + self.K_d*dy[i]*dy[i]
         self.vec_cost.append(cost)
-        print(self.vec_cost)
+        print("Custos: ", self.vec_cost)
 
     def findBetterCost(self):
         for i in range(len(self.vec_cost)):
@@ -426,7 +426,7 @@ class GA:
             self.nextPop.append(c2)
         self.oldPop = deepcopy(self.pop)
         self.pop = deepcopy(self.nextPop)
-        print("Vai filhão")
+        #print("Vai filhão")
 
     def crossover(self,p1, p2, gamma=0.1):
         c1 = deepcopy(p1)

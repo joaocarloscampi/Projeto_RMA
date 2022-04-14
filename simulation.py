@@ -19,6 +19,8 @@ import csv
 from copy import deepcopy
 import ga
 
+import matplotlib.pyplot as plt
+
 
 def Tp(name, x, y, z, yaw):
 
@@ -76,9 +78,15 @@ def Position_Robot(data):
     global header
     global data_csv
     global cont_line
+    global line1
+    global figure
+    global yPlotMean
+    global yPlotBest
 
-    if cont_gen < ga_univector.maxit:
+    if cont_gen <= ga_univector.maxit:
         if first_time:
+            if cont_ind != ga_univector.npop:
+                print("Geração: " + str(cont_gen+1) + ", Individuo " + str(cont_ind+1))
             start_time = time.time()
             Tp('yellow_team/robot_0', pos_x[0], pos_y[0], 0.02, pos_ang[0])
             Tp('vss_ball', 85, 65, 0.05, 0)
@@ -122,7 +130,6 @@ def Position_Robot(data):
                     vec_dang = []
 
                     if len(ga_univector.vec_cost) == 2*ga_univector.npop:
-                        print(ga_univector.vec_cost)
                         temp_pop = np.zeros([2*ga_univector.npop,ga_univector.nvar])
                         aux_temp_pop = np.zeros([ga_univector.npop,ga_univector.nvar])
                         aux_cost = []
@@ -139,9 +146,10 @@ def Position_Robot(data):
                             ga_univector.vec_cost[min_index] = np.inf
                         ga_univector.pop = deepcopy(aux_temp_pop)
                         ga_univector.vec_cost = deepcopy(aux_cost)
-                        print("Os melhores foram selecionados!!!")
+                        #print("Os melhores foram selecionados!!!")
                         for i in range(ga_univector.npop):
                             data_csv.append([cont_gen,ga_univector.pop[i][0],ga_univector.pop[i][1],ga_univector.pop[i][2],ga_univector.pop[i][3],ga_univector.pop[i][4], ga_univector.vec_cost[i]])
+                        ga_univector.findBetterCost()
                         with open('results.csv', 'w', encoding='UTF8', newline='') as f:
                             writer = csv.writer(f)
 
@@ -152,7 +160,10 @@ def Position_Robot(data):
                             writer.writerows(data_csv)
 
                             f.close()
-
+                        print("Média da geração: ", sum(ga_univector.vec_cost)/ga_univector.npop)
+                        print("Melhor custo: ", ga_univector.cost_better)
+                        print("Parâmetros do individuo: ", ga_univector.pop[ga_univector.index_better])
+                        print("----")
 
                 start_time = time.time()
 
@@ -163,7 +174,7 @@ def Position_Robot(data):
 
             else:
                 #exit()
-                ga_univector.findBetterCost()
+                #ga_univector.findBetterCost()
                 ga_univector.nextGen()
                 cont_gen += 1
                 cont_pos = 1
@@ -228,7 +239,7 @@ if __name__ == '__main__':
     ga_univector = GA(5,0,10,2,2)
     ga_univector.initialize_pop()
     cont_gen = 0
-    header = ['Genetation','d_e', 'k_r','delta','k_o','d_min','Cost']
+    header = ['Generation','d_e', 'k_r','delta','k_o','d_min','Cost']
     rospy.init_node('testeTraveSim', anonymous=True, disable_signals = True) #make node
 
     sub_robot = rospy.Subscriber('/vision/yellow_team/robot_0',ModelState,Position_Robot)
