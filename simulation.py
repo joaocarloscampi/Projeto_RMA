@@ -15,7 +15,7 @@ import numpy as np
 import time
 from random import uniform
 
-from ypstruct import structure
+from copy import deepcopy
 import ga
 
 
@@ -70,6 +70,7 @@ def Position_Robot(data):
     global vec_dt
     global vec_dy
     global vec_dang
+    global flag_gen
 
 
     if first_time:
@@ -115,12 +116,33 @@ def Position_Robot(data):
                 vec_dy = []
                 vec_dang = []
 
+                if len(ga_univector.vec_cost) == 2*ga_univector.npop:
+                    print(ga_univector.vec_cost)
+                    temp_pop = np.zeros([2*ga_univector.npop,ga_univector.nvar])
+                    aux_temp_pop = np.zeros([ga_univector.npop,ga_univector.nvar])
+                    aux_cost = []
+                    for i in range(2*ga_univector.npop):
+                        if i < ga_univector.npop:
+                            temp_pop[i] = ga_univector.oldPop[i]
+                        else:
+                            temp_pop[i] = ga_univector.pop[i-ga_univector.npop]
+                    for i in range(ga_univector.npop):
+                        min_value = min(ga_univector.vec_cost)
+                        min_index = ga_univector.vec_cost.index(min_value)
+                        aux_cost.append(min_value)
+                        aux_temp_pop[i] = temp_pop[min_index]
+                        ga_univector.vec_cost[min_index] = np.inf
+                    ga_univector.pop = deepcopy(aux_temp_pop)
+                    ga_univector.vec_cost = deepcopy(aux_cost)
+                    print("Os melhores foram selecionados!!!")
+
             start_time = time.time()
 
             #if cont_ind == len(ga_univector.pop):
                 #exit()
         elif cont_ind < ga_univector.npop:
             Go_To_Goal(robot, ball, ga_univector.pop[cont_ind])
+
         else:
             #exit()
             ga_univector.findBetterCost()
