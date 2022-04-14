@@ -15,6 +15,7 @@ import numpy as np
 import time
 from random import uniform
 
+import csv
 from copy import deepcopy
 import ga
 
@@ -71,95 +72,113 @@ def Position_Robot(data):
     global vec_dy
     global vec_dang
     global flag_gen
+    global cont_gen
+    global header
+    global data_csv
+    global cont_line
+
+    if cont_gen < ga_univector.maxit:
+        if first_time:
+            start_time = time.time()
+            Tp('yellow_team/robot_0', pos_x[0], pos_y[0], 0.02, pos_ang[0])
+            Tp('vss_ball', 85, 65, 0.05, 0)
+            tp = True
+            first_time = False
+
+        robot.sim_get_pose(data)
+        #Go_To_Goal(robot, ball, ga_univector.pop[cont_ind])
+
+        if not tp:
+            if robot.arrive():
+
+                robot.sim_set_vel(pub, 0, 0)
+                finish_time = time.time()
+
+                dt = finish_time - start_time
+                dy = robot.yPos - ball.yPos
+                dang = robot.theta
+
+                vec_dt.append(dt)
+                vec_dy.append(dy)
+                vec_dang.append(dang)
+
+                ga_univector.update_cost_param(dy,dang,dt)
+
+                if cont_pos < len(pos_x):
+                    #if not tp:
+                    print("dei tp")
+                    Tp('yellow_team/robot_0', pos_x[cont_pos], pos_y[cont_pos], 0.02, pos_ang[cont_pos])
+                    Tp('vss_ball', 85, 65, 0.05, 0)
+                    tp = True
+                    cont_pos += 1
+
+                else:
+                    ga_univector.cost_func(vec_dt, vec_dang, vec_dy)
+                    cont_pos = 1
+                    cont_ind += 1
+                    first_time = True
+                    vec_dt = []
+                    vec_dy = []
+                    vec_dang = []
+
+                    if len(ga_univector.vec_cost) == 2*ga_univector.npop:
+                        print(ga_univector.vec_cost)
+                        temp_pop = np.zeros([2*ga_univector.npop,ga_univector.nvar])
+                        aux_temp_pop = np.zeros([ga_univector.npop,ga_univector.nvar])
+                        aux_cost = []
+                        for i in range(2*ga_univector.npop):
+                            if i < ga_univector.npop:
+                                temp_pop[i] = ga_univector.oldPop[i]
+                            else:
+                                temp_pop[i] = ga_univector.pop[i-ga_univector.npop]
+                        for i in range(ga_univector.npop):
+                            min_value = min(ga_univector.vec_cost)
+                            min_index = ga_univector.vec_cost.index(min_value)
+                            aux_cost.append(min_value)
+                            aux_temp_pop[i] = temp_pop[min_index]
+                            ga_univector.vec_cost[min_index] = np.inf
+                        ga_univector.pop = deepcopy(aux_temp_pop)
+                        ga_univector.vec_cost = deepcopy(aux_cost)
+                        print("Os melhores foram selecionados!!!")
+                        for i in range(ga_univector.npop):
+                            data_csv.append([cont_gen,ga_univector.pop[i][0],ga_univector.pop[i][1],ga_univector.pop[i][2],ga_univector.pop[i][3],ga_univector.pop[i][4], ga_univector.vec_cost[i]])
+                        with open('results.csv', 'w', encoding='UTF8', newline='') as f:
+                            writer = csv.writer(f)
+
+                            # write the header
+                            writer.writerow(header)
+
+                            # write multiple rows
+                            writer.writerows(data_csv)
+
+                            f.close()
 
 
-    if first_time:
-        start_time = time.time()
-        Tp('yellow_team/robot_0', pos_x[0], pos_y[0], 0.02, pos_ang[0])
-        Tp('vss_ball', 85, 65, 0.05, 0)
-        tp = True
-        first_time = False
+                start_time = time.time()
 
-    robot.sim_get_pose(data)
-    #Go_To_Goal(robot, ball, ga_univector.pop[cont_ind])
-
-    if not tp:
-        if robot.arrive():
-
-            robot.sim_set_vel(pub, 0, 0)
-            finish_time = time.time()
-
-            dt = finish_time - start_time
-            dy = robot.yPos - ball.yPos
-            dang = robot.theta
-
-            vec_dt.append(dt)
-            vec_dy.append(dy)
-            vec_dang.append(dang)
-
-            ga_univector.update_cost_param(dy,dang,dt)
-
-            if cont_pos < len(pos_x):
-                #if not tp:
-                print("dei tp")
-                Tp('yellow_team/robot_0', pos_x[cont_pos], pos_y[cont_pos], 0.02, pos_ang[cont_pos])
-                Tp('vss_ball', 85, 65, 0.05, 0)
-                tp = True
-                cont_pos += 1
+                #if cont_ind == len(ga_univector.pop):
+                    #exit()
+            elif cont_ind < ga_univector.npop:
+                Go_To_Goal(robot, ball, ga_univector.pop[cont_ind])
 
             else:
-                ga_univector.cost_func(vec_dt, vec_dang, vec_dy)
+                #exit()
+                ga_univector.findBetterCost()
+                ga_univector.nextGen()
+                cont_gen += 1
                 cont_pos = 1
-                cont_ind += 1
+                cont_ind = 0
                 first_time = True
                 vec_dt = []
                 vec_dy = []
                 vec_dang = []
 
-                if len(ga_univector.vec_cost) == 2*ga_univector.npop:
-                    print(ga_univector.vec_cost)
-                    temp_pop = np.zeros([2*ga_univector.npop,ga_univector.nvar])
-                    aux_temp_pop = np.zeros([ga_univector.npop,ga_univector.nvar])
-                    aux_cost = []
-                    for i in range(2*ga_univector.npop):
-                        if i < ga_univector.npop:
-                            temp_pop[i] = ga_univector.oldPop[i]
-                        else:
-                            temp_pop[i] = ga_univector.pop[i-ga_univector.npop]
-                    for i in range(ga_univector.npop):
-                        min_value = min(ga_univector.vec_cost)
-                        min_index = ga_univector.vec_cost.index(min_value)
-                        aux_cost.append(min_value)
-                        aux_temp_pop[i] = temp_pop[min_index]
-                        ga_univector.vec_cost[min_index] = np.inf
-                    ga_univector.pop = deepcopy(aux_temp_pop)
-                    ga_univector.vec_cost = deepcopy(aux_cost)
-                    print("Os melhores foram selecionados!!!")
-
-            start_time = time.time()
-
-            #if cont_ind == len(ga_univector.pop):
-                #exit()
-        elif cont_ind < ga_univector.npop:
-            Go_To_Goal(robot, ball, ga_univector.pop[cont_ind])
-
         else:
-            #exit()
-            ga_univector.findBetterCost()
-            ga_univector.nextGen()
-            cont_pos = 1
-            cont_ind = 0
-            first_time = True
-            vec_dt = []
-            vec_dy = []
-            vec_dang = []
-
-    else:
-        if cont_tp > 100:
-            tp = False
-            cont_tp = 0
-        else:
-            cont_tp = cont_tp+1
+            if cont_tp > 100:
+                tp = False
+                cont_tp = 0
+            else:
+                cont_tp = cont_tp+1
 
 
 def Position_Ball(data):
@@ -172,7 +191,6 @@ def Publisher_Twist(v, w):
     msg.linear.x = v
     msg.angular.z = w
     pub.publish(msg)
-
 
 if __name__ == '__main__':
 
@@ -200,14 +218,17 @@ if __name__ == '__main__':
     tp_firstime = False
     cont_tp = 0
 
+    data_csv = []
+
     vec_dt = []
     vec_dy = []
     vec_dang = []
 
     ##GA var
-    ga_univector = GA(5,0,10,100,2)
+    ga_univector = GA(5,0,10,2,2)
     ga_univector.initialize_pop()
-
+    cont_gen = 0
+    header = ['Genetation','d_e', 'k_r','delta','k_o','d_min','Cost']
     rospy.init_node('testeTraveSim', anonymous=True, disable_signals = True) #make node
 
     sub_robot = rospy.Subscriber('/vision/yellow_team/robot_0',ModelState,Position_Robot)
