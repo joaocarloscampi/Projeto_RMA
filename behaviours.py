@@ -121,8 +121,8 @@ class Univector:
 
         # Composition of the two hyperbolic spirals
         if -self.d_e <= y < self.d_e:
-            x_phi = 0.5 * (abs(yl) * n_ccw[0][0] + abs(yr) ** 2 * n_cw[0][0]) / self.d_e
-            y_phi = 0.5 * (abs(yl) * n_ccw[1][0] + abs(yr) ** 2 * n_cw[1][0]) / self.d_e
+            x_phi = 0.5 * (abs(yl) * n_ccw[0][0] + sqrt(abs(yr) ** 2) * n_cw[0][0]) / self.d_e
+            y_phi = 0.5 * (abs(yl) * n_ccw[1][0] + sqrt(abs(yr) ** 2) * n_cw[1][0]) / self.d_e
             phi = arctan2(y_phi, x_phi)
             phi = phi[0]
         elif y < -self.d_e:
