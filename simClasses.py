@@ -362,7 +362,7 @@ class Robot:
 
 
 class GA:
-    def __init__(self,nvar,varmin,varmax,maxit,npop, K_t = 10, K_p = 5, K_d = 2):
+    def __init__(self,nvar,varmin,varmax,maxit,npop, K_t = 10, K_p = 8, K_d = 2):
         self.nvar = nvar
         self.varmin = varmin
         self.varmax = varmax
@@ -376,6 +376,7 @@ class GA:
         self.vec_dy = []
         self.vec_dang = []
         self.vec_dt = []
+        self.flagsTime = []
 
         self.index_better = 0
         self.cost_better = 1e6
@@ -383,11 +384,19 @@ class GA:
         self.nextPop = []
         self.oldPop = []
 
-    def update_cost_param(self,dy,dang,dt):
+        self.max_dt = []
+        self.index_dt = []
+        self.max_dy = []
+        self.index_dy = []
+        self.max_dang = []
+        self.index_dang = []
 
+
+    def update_cost_param(self,dy,dang,dt):
         self.vec_dy.append(dy)
         self.vec_dang.append(dang)
         self.vec_dt.append(dt)
+        self.flagsTime.append(flagTime)
 
     def initialize_pop(self):
 
@@ -395,11 +404,41 @@ class GA:
         for i in range(self.npop):
             self.pop[i] = random.uniform(self.varmin, self.varmax, self.nvar)
 
+        '''
+        self.pop[0] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
+        self.pop[1] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
+        self.pop[2] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
+        self.pop[3] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
+        self.pop[4] = [5.477497410944497,35.58485996650321,2.5431659060777347,10.0,1.6528931674854686]
+        self.pop[5] = [3.2672491317977657,10.0,3.7103403900831826,7.17271546744729,0.0]
+        self.pop[6] = [1.5150977975917321,10.0,2.5431659060777347,10.0,1.6528931674854686]
+        self.pop[7] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[8] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[9] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[10] = [1.5150977975917321,10.0,2.5431659060777347,10.0,1.6528931674854686]
+        self.pop[11] = [2.9653160631121005,8.734757110870461,1.990951845720799,10.0,0.0]
+        self.pop[12] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[13] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[14] = [2.9653160631121005,8.734757110870461,1.990951845720799,10.0,0.0]
+        self.pop[15] = [2.9653160631121005,8.734757110870461,1.990951845720799,10.0,0.0]
+        self.pop[16] = [2.865664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[17] = [2.965664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[18] = [2.765664036961706,10.0,4.417409367439603,10.0,0.0]
+        self.pop[19] = [2.665664036961706,10.0,4.417409367439603,10.0,0.0]
+        '''
+
     def cost_func(self, dt, dang, dy):
         cost = 0
         for i in range(len(dang)):
             cost += self.K_t*dt[i] + self.K_p*dang[i]*dang[i] + self.K_d*dy[i]*dy[i]
+        self.max_dt.append(max(dt))
+        self.index_dt.append(dt.index(self.max_dt[-1]) + 1)
+        self.max_dy.append(max(dy))
+        self.index_dy.append(dy.index(self.max_dy[-1]) + 1)
+        self.max_dang.append(max(dang))
+        self.index_dang.append(dang.index(self.max_dang[-1]) + 1)
         self.vec_cost.append(cost)
+
         print("Custos: ", self.vec_cost)
 
     def findBetterCost(self):
@@ -418,8 +457,8 @@ class GA:
         for i in range(int(self.npop/2)):
             p1, p2 = self.permutation()
             c1, c2 = self.crossover(p1, p2)
-            c1 = self.mutate(c1, 0.84, 2)
-            c2 = self.mutate(c2, 0.84, 2)
+            c1 = self.mutate(c1, 0.24, 2)
+            c2 = self.mutate(c2, 0.24, 2)
             c1 = self.apply_bound(c1, self.varmin, self.varmax)
             c2 = self.apply_bound(c2, self.varmin, self.varmax)
             self.nextPop.append(c1)
