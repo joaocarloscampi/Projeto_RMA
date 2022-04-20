@@ -403,6 +403,8 @@ class GA:
         self.pop = zeros([self.npop,self.nvar])
         for i in range(self.npop):
             self.pop[i] = random.uniform(self.varmin, self.varmax, self.nvar)
+            self.pop[i][0] = 4.084236529565755
+            self.pop[i][1] = 26.655381503697267
 
         '''
         self.pop[0] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
