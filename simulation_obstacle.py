@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import sys
 
 
-def Tp(name, x, y, z, yaw):
+def Tp(name, x, y, z, yaw, flag_obst = False):
 
     x = (x - 85)/100
     y = (y - 65)/100
@@ -43,6 +43,9 @@ def Tp(name, x, y, z, yaw):
     state_msg.pose.orientation.y = qy
     state_msg.pose.orientation.z = qz
     state_msg.pose.orientation.w = qw
+    
+    if flag_obst:
+        state_msg.twist.linear.x = 0.2
 
     rospy.wait_for_service('/gazebo/set_model_state')
     try:
@@ -52,18 +55,49 @@ def Tp(name, x, y, z, yaw):
     except rospy.ServiceException:
         print("Service call failed: ")
 
+
+def clbk_robot1(data):
+    global robot1
+    global pub1
+    global tp
+
+    ind = [4.084236529565755,26.655381503697267,6.486203658015432,10.616104633155718,2.2094790891712877]
+
+    robot1.sim_get_pose(data)
+    if not tp:
+        robot1.target.update(10, 60, np.pi)
+        v, w = univec_controller(robot1, robot1.target, ind,avoid_obst=False, double_face=False)
+        robot1.sim_set_vel(pub1, v/200, w)
+    else:
+        robot1.sim_set_vel(pub1,0,0)
+
+def clbk_robot2(data):
+    global robot2
+    global pub2
+    global tp
+
+    ind = [4.084236529565755,26.655381503697267,6.486203658015432,10.616104633155718,2.2094790891712877]
+
+    robot2.sim_get_pose(data)
+    if not tp:
+        robot2.target.update(10, 70, np.pi)
+        v, w = univec_controller(robot2, robot2.target, ind,avoid_obst=False, double_face=False)
+        robot2.sim_set_vel(pub2, v/200, w)
+    else:
+        robot1.sim_set_vel(pub2,0,0)
+
 def Go_To_Goal(robot, robot1, robot2, ball, ind):
     global xPos_1, yPos_1, xPos_2, yPos_2, flagColision
 
     arrival_theta = 0
-    robot.target.update(ball.xPos, ball.yPos, arrival_theta)
+    robot.target.update(ball.xPos, ball.yPos,arrival_theta)
     robot.obst.update(robot, robot1, robot2)
     v, w = univec_controller(robot, robot.target, ind,avoid_obst=True, obst=robot.obst,double_face=False)
     robot.sim_set_vel(pub, v/100, w)
 
-    if np.sqrt((robot.xPos - xPos_1)**2 + (robot.yPos - yPos_1)**2) < 9:
+    if np.sqrt((robot.xPos - robot1.xPos)**2 + (robot.yPos - robot1.yPos)**2) < 9:
         flagColision = True
-    if np.sqrt((robot.xPos - xPos_2)**2 + (robot.yPos - yPos_2)**2) < 9:
+    if np.sqrt((robot.xPos - robot2.xPos)**2 + (robot.yPos - robot2.yPos)**2) < 9:
         flagColision = True
 
 
@@ -103,8 +137,8 @@ def Position_Robot(data):
                 print("Geração: " + str(cont_gen+1) + ", Individuo " + str(cont_ind+1))
             start_time = rospy.get_time()
             Tp('yellow_team/robot_0', xPos_0, yPos_0, 0.02, 0)
-            Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 0)
-            Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 0)
+            Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 180, True)
+            Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 180, True)
             Tp('vss_ball', ball_x, ball_y, 0.05, 0)
             tp = True
             first_time = False
@@ -133,8 +167,8 @@ def Position_Robot(data):
                 #if cont_pos < len(pos_x):
                 #print("Posicao ", cont_pos+1 )
                 Tp('yellow_team/robot_0', xPos_0, yPos_0, 0.02, 0)
-                Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 0)
-                Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 0)
+                Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 180, True)
+                Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 180, True)
                 Tp('vss_ball', ball_x, ball_y, 0.05, 0)
                 tp = True
                 #cont_pos += 1
@@ -251,6 +285,8 @@ if __name__ == '__main__':
 
     ## Simulation var
     pub = rospy.Publisher("/yellow_team/robot_0/diff_drive_controller/cmd_vel", Twist, queue_size=10)
+    pub1 = rospy.Publisher("/yellow_team/robot_1/diff_drive_controller/cmd_vel", Twist, queue_size=10)
+    pub2 = rospy.Publisher("/yellow_team/robot_2/diff_drive_controller/cmd_vel", Twist, queue_size=10)
 
     robot = Robot(0, True)
     ball = Ball()
@@ -268,7 +304,7 @@ if __name__ == '__main__':
     yPos_0 = 65
     xPos_1 = 70
     yPos_1 = 60
-    xPos_2 = 100
+    xPos_2 = 110
     yPos_2 = 70
     ball_x = 120
     ball_y = 65
@@ -313,12 +349,14 @@ if __name__ == '__main__':
     flagColision = False
 
     ##GA var
-    ga_univector = GA(5,0,50,300,20)
+    ga_univector = GA(5,0,20,300,20)
     ga_univector.initialize_pop()
     cont_gen = 0
     header = ['Generation','d_e', 'k_r','delta','k_o','d_min','Cost','index_dt','dt','index_dy','dy','index_dang','dang']
     rospy.init_node('testeTraveSim', anonymous=True, disable_signals = True) #make node
 
     sub_robot = rospy.Subscriber('/vision/yellow_team/robot_0',ModelState,Position_Robot)
+    sub_robot1 = rospy.Subscriber('/vision/yellow_team/robot_1',ModelState,clbk_robot1)
+    sub_robot2 = rospy.Subscriber('/vision/yellow_team/robot_2',ModelState,clbk_robot2)
     sub_ball = rospy.Subscriber('/vision/ball',ModelState,Position_Ball)
     rospy.spin()
