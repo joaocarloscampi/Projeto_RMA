@@ -21,6 +21,8 @@ import ga
 
 import matplotlib.pyplot as plt
 
+import sys
+
 
 def Tp(name, x, y, z, yaw):
 
@@ -51,11 +53,19 @@ def Tp(name, x, y, z, yaw):
         print("Service call failed: ")
 
 def Go_To_Goal(robot, robot1, robot2, ball, ind):
+    global xPos_1, yPos_1, xPos_2, yPos_2, flagColision
+
     arrival_theta = 0
     robot.target.update(ball.xPos, ball.yPos, arrival_theta)
     robot.obst.update(robot, robot1, robot2)
     v, w = univec_controller(robot, robot.target, ind,avoid_obst=True, obst=robot.obst,double_face=False)
     robot.sim_set_vel(pub, v/100, w)
+
+    if np.sqrt((robot.xPos - xPos_1)**2 + (robot.yPos - yPos_1)**2) < 9:
+        flagColision = True
+    if np.sqrt((robot.xPos - xPos_2)**2 + (robot.yPos - yPos_2)**2) < 9:
+        flagColision = True
+
 
 
 def Position_Robot(data):
@@ -84,7 +94,8 @@ def Position_Robot(data):
     global yPlotBest
     global flagTime
     global vec_flagsTime
-    global xPos_0, yPos_0, xPos_1, yPos_1, xPos_2, yPos_2
+    global xPos_0, yPos_0, xPos_1, yPos_1, xPos_2, yPos_2, ball_x, ball_y
+    global flagColision
 
     if cont_gen <= ga_univector.maxit:
         if first_time:
@@ -94,7 +105,7 @@ def Position_Robot(data):
             Tp('yellow_team/robot_0', xPos_0, yPos_0, 0.02, 0)
             Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 0)
             Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 0)
-            Tp('vss_ball', 125, 65, 0.05, 0)
+            Tp('vss_ball', ball_x, ball_y, 0.05, 0)
             tp = True
             first_time = False
 
@@ -124,16 +135,20 @@ def Position_Robot(data):
                 Tp('yellow_team/robot_0', xPos_0, yPos_0, 0.02, 0)
                 Tp('yellow_team/robot_1', xPos_1, yPos_1, 0.02, 0)
                 Tp('yellow_team/robot_2', xPos_2, yPos_2, 0.02, 0)
-                Tp('vss_ball', 125, 65, 0.05, 0)
+                Tp('vss_ball', ball_x, ball_y, 0.05, 0)
                 tp = True
                 #cont_pos += 1
 
                 #else:
                 ga_univector.cost_func(vec_dt, vec_dang, vec_dy)
+                if flagColision or flagTime:
+                    #print("BATEEEEU")
+                    ga_univector.vec_cost[-1] += 500
                 #cont_pos = 1
                 cont_ind += 1
                 first_time = True
                 flagTime = False
+                flagColision = False
                 vec_dt = []
                 vec_dy = []
                 vec_dang = []
@@ -175,6 +190,10 @@ def Position_Robot(data):
                     print("Melhor custo: ", ga_univector.cost_better)
                     print("Parâmetros do individuo: ", ga_univector.pop[ga_univector.index_better])
                     print("----")
+
+                    if sum(ga_univector.vec_cost)/ga_univector.npop - ga_univector.cost_better < 10:
+                        sys.exit()
+
                     ga_univector.max_dt = []
                     ga_univector.index_dt = []
                     ga_univector.max_dy = []
@@ -203,6 +222,7 @@ def Position_Robot(data):
                 cont_ind = 0
                 first_time = True
                 flagTime = False
+                flagColision = False
                 vec_dt = []
                 vec_dy = []
                 vec_dang = []
@@ -243,12 +263,25 @@ if __name__ == '__main__':
     #pos_y = [65,115,120,115,65,25,20,25]
     #pos_ang = [0,0,180,180,180,180,180,0]
 
+    # Cenário 1
     xPos_0 = 20
     yPos_0 = 65
     xPos_1 = 70
     yPos_1 = 60
     xPos_2 = 100
     yPos_2 = 70
+    ball_x = 120
+    ball_y = 65
+
+    # Cenário 2
+    # xPos_0 = 20
+    # yPos_0 = 65
+    # xPos_1 = 55
+    # yPos_1 = 60
+    # xPos_2 = 120
+    # yPos_2 = 65
+    # ball_x = 145
+    # ball_y = 65
 
     robot1 = Robot(1, True)
     robot1.xPos = xPos_1
@@ -277,9 +310,10 @@ if __name__ == '__main__':
     vec_flagsTime = []
 
     flagTime = False
+    flagColision = False
 
     ##GA var
-    ga_univector = GA(5,0,50,100,20)
+    ga_univector = GA(5,0,50,300,20)
     ga_univector.initialize_pop()
     cont_gen = 0
     header = ['Generation','d_e', 'k_r','delta','k_o','d_min','Cost','index_dt','dt','index_dy','dy','index_dang','dang']

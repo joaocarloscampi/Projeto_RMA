@@ -1,4 +1,4 @@
-from numpy import sqrt, array, amin, where, zeros, delete, append, int32, argmin, random, argwhere, maximum, minimum, power, multiply
+from numpy import sqrt, array, amin, where, zeros, delete, append, int32, argmin, random, argwhere, maximum, minimum, power, multiply, rad2deg
 
 from geometry_msgs.msg import Twist
 from tf.transformations import euler_from_quaternion
@@ -403,11 +403,46 @@ class GA:
         self.pop = zeros([self.npop,self.nvar])
         for i in range(self.npop):
             self.pop[i] = random.uniform(self.varmin, self.varmax, self.nvar)
-            self.pop[i][0] = 4.084236529565755
-            self.pop[i][1] = 26.655381503697267
+            #self.pop[i][0] = 4.084236529565755
+            #self.pop[i][1] = 26.655381503697267
 
         '''
-        self.pop[0] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
+        self.pop[0] = [4.084236529565755,26.655381503697267,12.76171184639477,32.709552566597154,3.5952717614203045]
+
+        self.pop[1][0] = 4.084236529565755
+        self.pop[1][1] = 26.655381503697267
+
+        self.pop[2][0] = 4.084236529565755
+        self.pop[2][1] = 26.655381503697267
+
+        self.pop[3][0] = 4.084236529565755
+        self.pop[3][1] = 26.655381503697267
+
+        self.pop[4][0] = 4.084236529565755
+        self.pop[4][1] = 26.655381503697267
+        '''
+
+        self.pop[1] = [4.084236529565755,26.655381503697267,3,10.0,0.5]
+        self.pop[2] = [4.084236529565755,26.655381503697267,6,10.0,0.5]
+        self.pop[3] = [4.084236529565755,26.655381503697267,9,10.0,0.5]
+        self.pop[4] = [4.084236529565755,26.655381503697267,12,10.0,0.5]
+        self.pop[5] = [4.084236529565755,26.655381503697267,15,7.17271546744729,0.5]
+        self.pop[6] = [4.084236529565755,26.655381503697267,3,10.0,1]
+        self.pop[7] = [4.084236529565755,26.655381503697267,6,10.0,1]
+        self.pop[8] = [4.084236529565755,26.655381503697267,9,10.0,1]
+        self.pop[9] = [4.084236529565755,26.655381503697267,12,10.0,1]
+        self.pop[10] = [4.084236529565755,26.655381503697267,15,10.0,1]
+        self.pop[11] = [4.084236529565755,26.655381503697267,3,10.0,1.5]
+        self.pop[12] = [4.084236529565755,26.655381503697267,6,10.0,1.5]
+        self.pop[13] = [4.084236529565755,26.655381503697267,9,10.0,1.5]
+        self.pop[14] = [4.084236529565755,26.655381503697267,12,10.0,1.5]
+        self.pop[15] = [4.084236529565755,26.655381503697267,15,10.0,1.5]
+        self.pop[16] = [4.084236529565755,26.655381503697267,3,10.0,2.5]
+        self.pop[17] = [4.084236529565755,26.655381503697267,6,10.0,2.5]
+        self.pop[18] = [4.084236529565755,26.655381503697267,9,10.0,2.5]
+        self.pop[19] = [4.084236529565755,26.655381503697267,12,10.0,2.5]
+
+        '''
         self.pop[1] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
         self.pop[2] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
         self.pop[3] = [5.477497410944497,35.58485996650321,4.417409367439603,10.0,0.0]
@@ -432,7 +467,7 @@ class GA:
     def cost_func(self, dt, dang, dy):
         cost = 0
         for i in range(len(dang)):
-            cost += self.K_t*dt[i] + self.K_p*dang[i]*dang[i] + self.K_d*dy[i]*dy[i]
+            cost += self.K_t*dt[i] + self.K_p*sqrt(rad2deg(dang[i])*rad2deg(dang[i])) + self.K_d*dy[i]*dy[i]
         self.max_dt.append(max(dt))
         self.index_dt.append(dt.index(self.max_dt[-1]) + 1)
         self.max_dy.append(max(dy))
